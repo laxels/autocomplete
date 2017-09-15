@@ -7,12 +7,13 @@
   };
 
 
-  var AC = self.Autocomplete = function(args) {
+  var AC = self.Autocomplete = function(element, args) {
     var ac = this;
+    ac.element = element;
 
     for(var d in defaults) ac[d] = defaults[d];
 
-    var acceptedArgs = ['element', 'list', 'url', 'minChars', 'throttle'];
+    var acceptedArgs = ['list', 'url', 'minChars', 'throttle'];
     for(var i=0; i<acceptedArgs.length; i++) {
       var a = acceptedArgs[i];
       if(args[a] !== undefined) ac[a] = args[a];
