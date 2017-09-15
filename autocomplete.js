@@ -22,6 +22,20 @@
     var ac = this;
     ac.element = element;
 
+    ac.listElement = document.createElement('div');
+    ac.listElement.classList.add('autocomplete-list');
+    ac.element.parentElement.insertBefore(ac.listElement, ac.element.nextSibling);
+
+    Object.defineProperty(ac, 'list', {
+      get: function() {
+        return ac._list;
+      },
+      set: function(l) {
+        ac._list = l;
+        ac.refreshList();
+      }
+    });
+
     for(var d in defaults) ac[d] = defaults[d];
 
     var acceptedArgs = ['list', 'url', 'urlParams', 'queryParam', 'minChars', 'throttle'];
@@ -38,7 +52,7 @@
         if(ac.element.value == ac.currentValue) return;
 
         var val = ac.currentValue = ac.element.value;
-        if(val.length < ac.minChars) return;
+        if(val.length < ac.minChars) return ac.close();
 
         if(ac.url && ac.queryParam) ac.getListFromUrl(function(){ac.open()});
         else ac.open();
@@ -47,16 +61,43 @@
   };
 
 
+  AC.prototype.refreshList = function() {
+    var ac = this;
+    ac.listElement.innerHTML = '';
+    for(var i=0; i<ac.list.length; i++) {
+      (function(x) {
+        var e = document.createElement('div');
+        e.classList.add('autocomplete-list-item');
+        e.textContent = x.name;
+        e.addEventListener('click', function() {
+          ac.select(x);
+        });
+        ac.listElement.appendChild(e);
+      })(ac.list[i]);
+    }
+  };
+
+
   AC.prototype.open = function() {
     var ac = this;
     console.log('opening', ac.list);
     if(!ac.list.length) return ac.close();
+    ac.listElement.style.display = 'block';
   };
 
 
   AC.prototype.close = function() {
     var ac = this;
     console.log('closing');
+    ac.listElement.style.display = 'none';
+  };
+
+
+  AC.prototype.select = function(item) {
+    var ac = this;
+    console.log('selecting', item);
+    ac.close();
+    ac.currentValue = ac.element.value = item.name;
   };
 
 
