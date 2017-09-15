@@ -1,9 +1,13 @@
 .autocomplete-list {
+  position: absolute;
+  box-sizing: border-box;
   text-align: left;
   border: 1px solid #b5b5b5;
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   padding: 3px 0;
+  background: #fff;
+  opacity: .9;
 }
 
 .autocomplete-list.autocomplete-hidden {
@@ -17,4 +21,9 @@
 
 .autocomplete-list-item.autocomplete-hovered {
   background: #eee;
+}
+
+.autocomplete-active {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
 }

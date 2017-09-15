@@ -66,7 +66,7 @@
         var val = ac.currentValue = ac.element.value;
         if(val.length < ac.minChars) return ac.close();
 
-        if(ac.url && ac.queryParam) ac.getListFromUrl(function(){ac.open()});
+        if(ac.url && ac.queryParam) ac.getListFromUrl();
         else ac.open();
       }, 0);
     });
@@ -101,18 +101,30 @@
   };
 
 
+  AC.prototype.positionListElement = function() {
+    var ac = this;
+    ac.listElement.style.top = (ac.element.offsetTop + ac.element.offsetHeight) + 'px';
+    ac.listElement.style.left = ac.element.offsetLeft + 'px';
+    ac.listElement.style.width = ac.element.offsetWidth + 'px';
+  };
+
+
   AC.prototype.open = function() {
     var ac = this;
     if(!ac.list.length) return ac.close();
+    ac.positionListElement();
     ac.listElement.classList.remove('autocomplete-hidden');
+    ac.element.classList.add('autocomplete-active');
   };
 
 
   AC.prototype.close = function() {
     var ac = this;
     ac.listElement.classList.add('autocomplete-hidden');
+    ac.element.classList.remove('autocomplete-active');
     delete ac.hovered;
     ac.refreshHovered();
+    ac.lastClose = Date.now();
   };
 
 
@@ -154,7 +166,7 @@
   };
 
 
-  AC.prototype.getListFromUrl = function(cb) {
+  AC.prototype.getListFromUrl = function() {
     var ac = this;
     if(!ac.url) return;
 
@@ -168,9 +180,9 @@
 
     var ts = ac.ongoingRequests['getListFromUrl'] = Date.now();
     getRequest(url, function(data) {
-      if(ts != ac.ongoingRequests['getListFromUrl']) return;
+      if(ts != ac.ongoingRequests['getListFromUrl'] || ts < ac.lastClose) return;
       ac.list = data;
-      if(cb) cb();
+      ac.open();
     });
   };
 
