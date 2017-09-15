@@ -1,0 +1,20 @@
+.autocomplete-list {
+  text-align: left;
+  border: 1px solid #b5b5b5;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  padding: 3px 0;
+}
+
+.autocomplete-list.autocomplete-hidden {
+  display: none;
+}
+
+.autocomplete-list-item {
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.autocomplete-list-item.autocomplete-hovered {
+  background: #eee;
+}

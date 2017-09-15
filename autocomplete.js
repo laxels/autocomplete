@@ -24,6 +24,7 @@
 
     ac.listElement = document.createElement('div');
     ac.listElement.classList.add('autocomplete-list');
+    ac.listElement.classList.add('autocomplete-hidden');
     ac.element.parentElement.insertBefore(ac.listElement, ac.element.nextSibling);
 
     Object.defineProperty(ac, 'list', {
@@ -38,16 +39,27 @@
 
     for(var d in defaults) ac[d] = defaults[d];
 
-    var acceptedArgs = ['list', 'url', 'urlParams', 'queryParam', 'minChars', 'throttle'];
-    for(var i=0; i<acceptedArgs.length; i++) {
-      var a = acceptedArgs[i];
+    var extendArgs = ['list', 'url', 'urlParams', 'queryParam', 'minChars', 'throttle'];
+    for(var i=0; i<extendArgs.length; i++) {
+      var a = extendArgs[i];
       if(args[a] !== undefined) ac[a] = args[a];
     }
 
-    ac.ongoingRequests = {};
-
     ac.currentValue = ac.element.value;
-    ac.element.addEventListener('keydown', function() {
+    ac.element.addEventListener('keydown', function(e) {
+      switch(e.key) {
+        case 'ArrowDown':
+          ac.hoverDown();
+          return e.preventDefault();
+        case 'ArrowUp':
+          ac.hoverUp();
+          return e.preventDefault();
+        case 'Enter':
+          if(ac.hovered) {
+            ac.select(ac.hovered);
+            return e.preventDefault();
+          }
+      }
       setTimeout(function() {
         if(ac.element.value == ac.currentValue) return;
 
@@ -58,6 +70,8 @@
         else ac.open();
       }, 0);
     });
+
+    ac.ongoingRequests = {};
   };
 
 
@@ -69,33 +83,72 @@
         var e = document.createElement('div');
         e.classList.add('autocomplete-list-item');
         e.textContent = x.name;
-        e.addEventListener('click', function() {
-          ac.select(x);
-        });
+        e.addEventListener('click', function(){ac.select(x)});
+        e.addEventListener('mouseenter', function(){ac.hover(x)});
         ac.listElement.appendChild(e);
       })(ac.list[i]);
     }
   };
 
 
+  AC.prototype.refreshHovered = function() {
+    var ac = this;
+    var index = ac.list.indexOf(ac.hovered);
+    for(var i=0; i<ac.list.length; i++) {
+      if(i === index) ac.listElement.childNodes[i].classList.add('autocomplete-hovered');
+      else ac.listElement.childNodes[i].classList.remove('autocomplete-hovered');
+    }
+  };
+
+
   AC.prototype.open = function() {
     var ac = this;
-    console.log('opening', ac.list);
     if(!ac.list.length) return ac.close();
-    ac.listElement.style.display = 'block';
+    ac.listElement.classList.remove('autocomplete-hidden');
   };
 
 
   AC.prototype.close = function() {
     var ac = this;
-    console.log('closing');
-    ac.listElement.style.display = 'none';
+    ac.listElement.classList.add('autocomplete-hidden');
+    delete ac.hovered;
+    ac.refreshHovered();
+  };
+
+
+  AC.prototype.hover = function(item) {
+    var ac = this;
+    ac.hovered = item;
+    ac.refreshHovered();
+  };
+
+
+  AC.prototype.hoverDown = function() {
+    var ac = this;
+    if(!ac.list.length) return;
+    if(!ac.hovered) var i = 0;
+    else {
+      var i = ac.list.indexOf(ac.hovered) + 1;
+      if(i >= ac.list.length) i = 0;
+    }
+    ac.hover(ac.list[i]);
+  };
+
+
+  AC.prototype.hoverUp = function() {
+    var ac = this;
+    if(!ac.list.length) return;
+    if(!ac.hovered) var i = ac.list.length - 1;
+    else {
+      var i = ac.list.indexOf(ac.hovered) - 1;
+      if(i < 0) i = ac.list.length - 1;
+    }
+    ac.hover(ac.list[i]);
   };
 
 
   AC.prototype.select = function(item) {
     var ac = this;
-    console.log('selecting', item);
     ac.close();
     ac.currentValue = ac.element.value = item.name;
   };
