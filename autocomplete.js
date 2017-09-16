@@ -68,12 +68,18 @@
         if(ac.element.value === ac.currentValue) return;
 
         var val = ac.currentValue = ac.element.value;
-        if(val.length < ac.minChars) return ac.close();
+        if(val.length < ac.minChars) {
+          ac.list = [];
+          return ac.close();
+        }
 
         if(ac.url && ac.queryParam) ac.getListFromUrl();
         else ac.open();
-      }, 0);
+      });
     });
+
+    ac.element.addEventListener('focus', function(){ac.open()});
+    ac.element.addEventListener('blur', function(){ac.close()});
 
     ac.ongoingRequests = {};
   };
@@ -95,7 +101,7 @@
         var e = document.createElement('div');
         e.classList.add('autocomplete-list-item');
         e.textContent = x[ac.label];
-        e.addEventListener('click', function(){ac.select(x)});
+        e.addEventListener('mousedown', function(){ac.select(x)});
         e.addEventListener('mouseenter', function(){ac.hover(x)});
         ac.listElement.appendChild(e);
       })(ac.list[i]);
@@ -188,7 +194,7 @@
 
     var url = ac.url + '?'+ac.queryParam+'='+ac.currentValue;
     if(ac.urlParams) {
-      for(var p in ac.urlParams) url += p+'='+ac.urlParams[p];
+      for(var p in ac.urlParams) url += '&'+p+'='+ac.urlParams[p];
     }
 
     var ts = Date.now();
