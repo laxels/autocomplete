@@ -75,7 +75,7 @@
 
         if(ac.url && ac.queryParam) ac.getListFromUrl();
         else ac.open();
-      });
+      }, 50);
     });
 
     ac.element.addEventListener('focus', function(){ac.open()});
