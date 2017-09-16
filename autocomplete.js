@@ -8,13 +8,15 @@
     });
     req.open('GET', url);
     req.send();
-  };
+  }
 
 
   var defaults = {
     list: [],
+    label: 'label',
     minChars: 2,
-    throttle: 300
+    throttle: 500,
+    callbacks: {}
   };
 
 
@@ -32,14 +34,16 @@
         return ac._list;
       },
       set: function(l) {
-        ac._list = l;
+        var oldList = ac._list, newList = l || [];
+        if(oldList && ac.compareLists(oldList, newList)) return;
+        ac._list = newList;
         ac.refreshList();
       }
     });
 
     for(var d in defaults) ac[d] = defaults[d];
 
-    var extendArgs = ['list', 'url', 'urlParams', 'queryParam', 'minChars', 'throttle'];
+    var extendArgs = ['list', 'label', 'url', 'urlParams', 'queryParam', 'minChars', 'throttle', 'callbacks'];
     for(var i=0; i<extendArgs.length; i++) {
       var a = extendArgs[i];
       if(args[a] !== undefined) ac[a] = args[a];
@@ -61,7 +65,7 @@
           }
       }
       setTimeout(function() {
-        if(ac.element.value == ac.currentValue) return;
+        if(ac.element.value === ac.currentValue) return;
 
         var val = ac.currentValue = ac.element.value;
         if(val.length < ac.minChars) return ac.close();
@@ -75,6 +79,14 @@
   };
 
 
+  AC.prototype.compareLists = function(l1, l2) {
+    var ac = this;
+    if(l1.length !== l2.length) return false;
+    for(var i=0; i<l1.length; i++) if(l1[i][ac.label] !== l2[i][ac.label]) return false;
+    return true;
+  };
+
+
   AC.prototype.refreshList = function() {
     var ac = this;
     ac.listElement.innerHTML = '';
@@ -82,7 +94,7 @@
       (function(x) {
         var e = document.createElement('div');
         e.classList.add('autocomplete-list-item');
-        e.textContent = x.name;
+        e.textContent = x[ac.label];
         e.addEventListener('click', function(){ac.select(x)});
         e.addEventListener('mouseenter', function(){ac.hover(x)});
         ac.listElement.appendChild(e);
@@ -115,6 +127,7 @@
     ac.positionListElement();
     ac.listElement.classList.remove('autocomplete-hidden');
     ac.element.classList.add('autocomplete-active');
+    if(ac.callbacks.open) ac.callbacks.open();
   };
 
 
@@ -125,6 +138,7 @@
     delete ac.hovered;
     ac.refreshHovered();
     ac.lastClose = Date.now();
+    if(ac.callbacks.close) ac.callbacks.close();
   };
 
 
@@ -132,6 +146,7 @@
     var ac = this;
     ac.hovered = item;
     ac.refreshHovered();
+    if(ac.callbacks.hover) ac.callbacks.hover(item);
   };
 
 
@@ -162,28 +177,43 @@
   AC.prototype.select = function(item) {
     var ac = this;
     ac.close();
-    ac.currentValue = ac.element.value = item.name;
+    ac.currentValue = ac.element.value = item[ac.label];
+    if(ac.callbacks.select) ac.callbacks.select(item);
   };
 
 
   AC.prototype.getListFromUrl = function() {
     var ac = this;
-    if(!ac.url) return;
+    if(!ac.url || ac._delayedGetList) return;
 
     var url = ac.url + '?'+ac.queryParam+'='+ac.currentValue;
-
     if(ac.urlParams) {
-      for(var p in ac.urlParams) {
-        url += p+'='+ac.urlParams[p];
-      }
+      for(var p in ac.urlParams) url += p+'='+ac.urlParams[p];
     }
 
-    var ts = ac.ongoingRequests['getListFromUrl'] = Date.now();
+    var ts = Date.now();
+    var timeSinceLast = ts - ac.ongoingRequests['getListFromUrl'];
+    if(timeSinceLast < ac.throttle) return ac.delayedGetListFromUrl(ac.throttle - timeSinceLast);
+
+    ac.ongoingRequests['getListFromUrl'] = ts;
     getRequest(url, function(data) {
-      if(ts != ac.ongoingRequests['getListFromUrl'] || ts < ac.lastClose) return;
+      if(!ac.ongoingRequests['getListFromUrl']) return;
+      else if(ac.ongoingRequests['getListFromUrl'] === ts) delete ac.ongoingRequests['getListFromUrl'];
+      if(ts < ac.lastClose) return;
       ac.list = data;
       ac.open();
     });
+  };
+
+
+  AC.prototype.delayedGetListFromUrl = function(delay) {
+    var ac = this;
+    if(ac._delayedGetList) return;
+    ac._delayedGetList = setTimeout(function() {
+      delete ac._delayedGetList;
+      if(ac.currentValue.length < ac.minChars) return;
+      ac.getListFromUrl();
+    }, delay);
   };
 
 })();
