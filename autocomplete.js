@@ -80,8 +80,6 @@
 
     ac.element.addEventListener('focus', function(){ac.open()});
     ac.element.addEventListener('blur', function(){ac.close()});
-
-    ac.ongoingRequests = {};
   };
 
 
@@ -198,13 +196,13 @@
     }
 
     var ts = Date.now();
-    var timeSinceLast = ts - ac.ongoingRequests['getListFromUrl'];
+    var timeSinceLast = ts - ac._lastGetList;
     if(timeSinceLast < ac.throttle) return ac.delayedGetListFromUrl(ac.throttle - timeSinceLast);
 
-    ac.ongoingRequests['getListFromUrl'] = ts;
+    ac._lastGetList = ts;
     getRequest(url, function(data) {
-      if(!ac.ongoingRequests['getListFromUrl']) return;
-      else if(ac.ongoingRequests['getListFromUrl'] === ts) delete ac.ongoingRequests['getListFromUrl'];
+      if(!ac._lastGetList) return;
+      else if(ac._lastGetList === ts) delete ac._lastGetList;
       if(ts < ac.lastClose) return;
       ac.list = data;
       ac.open();
